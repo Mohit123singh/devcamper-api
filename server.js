@@ -21,6 +21,7 @@ const app=express();
 
 // body parser:
 app.use(express.json());
+app.use(express.urlencoded({extended:false}))
 
 // Dev logging middleware
 if(process.env.NODE_ENV==='development')

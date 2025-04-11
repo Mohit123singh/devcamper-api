@@ -1,16 +1,95 @@
 const asyncHandler=require('express-async-handler')
 const ErrorResponse=require('../utils/errorResponse')
+const geocoder=require('../utils/geoCode')
 const Bootcamp=require('../models/Bootcamp')
 
 // @desc   Get all bootcamps
 // @route  GET /api/v1/bootcamps
 // @access Public
 const getBootcamps=asyncHandler(async(req,res,next)=>{
+
+    let query;
+
+    //Copy req.query
+    const reqQuery={...req.query};
+
+    // Fields to exclude
+    const removeFields=['select','sort','page','limit']
+
+    // Loop over removeFields and delete them from reqQuery.
+    removeFields.forEach(param=> delete reqQuery[param]);
+
+    console.log(reqQuery);
+
+    //Create  query string
+    let queryStr=JSON.stringify(reqQuery);
+
+    // Create operators ($gt,$gte,etc)
+
+    queryStr = queryStr.replace(
+        /\b(gt|gte|lt|lte|in)\b/g,
+        (match) => `$${match}`
+      );
+
+   // console.log(queryStr)
     
-    const bootcamps=await Bootcamp.find()
+   // Finding resource
+    query = Bootcamp.find(JSON.parse(queryStr));
+
+    //Select Fields :
+    if(req.query.select)
+    {
+        const fields=req.query.select.split(',').join(' ');
+        query=query.select(fields);
+       
+    }
+
+    //sort
+
+    if(req.query.sort)
+    {
+        const sortBy=req.query.sort.split(',').join(' ');
+        query=query.sort(sortBy);
+    }
+    else
+    {
+        query=query.sort('-createdAt');
+    }
+
+    // Pagination :
+    const page=parseInt(req.query.page,10) || 1;
+    const limit=parseInt(req.query.limit,10) || 25;
+    const startIndex=(page-1)*limit;
+    const endIndex=page*limit;
+    const total=await Bootcamp.countDocuments(queryStr);
+
+    query=query.skip(startIndex).limit(limit);
+
+    //Executing query
+    const bootcamps=await query
+
+    // Pagination result :
+    const pagination={};
+
+    if(endIndex<total)
+    {
+        pagination.next={
+            page:page+1,
+            limit
+        }
+    }
+    if(startIndex>0)
+    {
+        pagination.prev={
+            page:page-1,
+            limit
+        }
+    }
+
     res.status(200).json({
         success:true,
         count:bootcamps.length,
+        pagination,
         data:bootcamps,
     })
 })
@@ -97,11 +176,62 @@ const deleteBootcamp=asyncHandler(async(req,res,next)=>{
 });
 
 
+
+// @desc   Get bootcamps within a radius
+// @route  GET /api/v1/bootcamps/radius/:zipcode/:distance
+// @access Private
+const getBootcampsInRadius=asyncHandler(async(req,res,next)=>{
+
+    const {zipcode,distance}=req.params;
+
+    // Geocode to get lat/lng
+  const results = await geocoder.geocode(`${zipcode}, USA`);
+  const loc = results.find(r => r.countryCode === 'us');
+
+  if (!loc) {
+    return (next(new ErrorResponse('Valid US location not found for the given ZIP code',404)))
+  }
+
+  if (isNaN(distance) || distance <= 0) {
+    return next(new ErrorResponse('Please provide a valid distance in miles', 400));
+  }
+  
+  const lat = loc.latitude;
+  const lng = loc.longitude;
+
+    // calc radius using radians :
+    // Divide dist by radius of Earth :
+    // Earth radius : 3,963 mi /6,378 km
+    
+
+    const radius=parseFloat(distance)/3963
+
+    
+    
+
+    const bootcamps=await Bootcamp.find({
+        
+        'location.coordinates':{ $geoWithin: { $centerSphere: [ [ lng,lat ], radius ] }}
+    })
+
+    res.status(200).json({
+        success:true,
+        count:bootcamps.length,
+        data:bootcamps,
+    })
+   
+
+   
+   
+});
+
+
 module.exports={
     getBootcamps,
     getBootcamp,
     createBootcamp,
     updateBootcamp,
-    deleteBootcamp
+    deleteBootcamp,
+    getBootcampsInRadius,
 
 }
