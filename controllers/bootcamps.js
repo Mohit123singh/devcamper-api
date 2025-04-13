@@ -61,14 +61,17 @@ const getBootcamps=asyncHandler(async(req,res,next)=>{
     const limit=parseInt(req.query.limit,10) || 25;
     const startIndex=(page-1)*limit;
     const endIndex=page*limit;
-    const total=await Bootcamp.countDocuments(queryStr);
+    //  total number of documents matching the filters,
+    const total=await Bootcamp.countDocuments(JSON.parse(queryStr))
 
-    query=query.skip(startIndex).limit(limit);
+    query=query.skip(startIndex).limit(limit)
+    
 
     //Executing query
     const bootcamps=await query
 
     // Pagination result :
+
     const pagination={};
 
     if(endIndex<total)
@@ -85,6 +88,7 @@ const getBootcamps=asyncHandler(async(req,res,next)=>{
             limit
         }
     }
+   
 
     res.status(200).json({
         success:true,
