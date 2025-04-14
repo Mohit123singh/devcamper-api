@@ -1,5 +1,7 @@
 const mongoose=require('mongoose');
 const courseSchema=new mongoose.Schema({
+   
+
     title:{
        type:String,
        trim:true,
@@ -27,16 +29,16 @@ const courseSchema=new mongoose.Schema({
         type:Boolean,
         default:false
     },
-
     bootcamp:{
         type:mongoose.Schema.ObjectId,
         ref:'Bootcamp',
         required:true,
     }
 
+   
 },{
     timestamps:true,
 })
 
-const courseModel=mongoose.model('Courses',courseSchema);
+const courseModel=mongoose.model('Course',courseSchema);
 module.exports=courseModel;
