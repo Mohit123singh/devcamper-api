@@ -52,8 +52,36 @@ const authorize = (...roles) => (req, res, next) => {
 };
 
 
+// @desc Middleware to check existence and ownership of a resource
+const checkExistenceOwnership = model =>
+  asyncHandler(async (req, res, next) => {
+    const resource = await model.findById(req.params.id);
+
+    if (!resource) {
+      return next(
+        new ErrorResponse(`Resource not found with id: ${req.params.id}`, 404)
+      );
+    }
+
+    // Check ownership unless user is admin
+    if (req.user.role !== 'admin' && resource.user.toString() !== req.user.id) {
+      return next(
+        new ErrorResponse(
+          `User ${req.user.id} is not authorized to access this resource`,
+          401
+        )
+      );
+    }
+
+    // Attach the resource to request for later use
+    req.resource = resource;
+
+    next();
+  });
+
 
 module.exports={
     protect,
     authorize,
+    checkExistenceOwnership,
 }
