@@ -53,7 +53,7 @@ const getCourse=asyncHandler(async(req,res,next)=>{
     })
 
     if(!course)
-        return next(new ErrorResponse(`No course with the id of ${req.params.id}`),404)
+        return next(new ErrorResponse(`No course with the id of ${req.params.id}`,404))
    
     res.status(200).json({
         success:true,
@@ -78,7 +78,7 @@ const addCourse=asyncHandler(async(req,res,next)=>{
     const bootcamp=await Bootcamp.findById(req.params.bootcampId);
 
     if(!bootcamp)
-        return next(new ErrorResponse(`No bootcamp with the id of ${req.params.bootcampId}`),404)
+        return next(new ErrorResponse(`No bootcamp with the id of ${req.params.bootcampId}`,404))
    
 
   // Make sure user is bootcamp owner.
