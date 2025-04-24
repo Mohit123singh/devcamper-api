@@ -72,6 +72,27 @@ const getMe=asyncHandler(async(req,res,next)=>{
 
 
 
+// @desc   Log user out / clear cookie
+// @route  Get /api/v1/auth/logout
+// @access Private
+
+const logOut=asyncHandler(async(req,res,next)=>{
+  
+  res.cookie('token','none',{
+    expires:new Date(Date.now()+10*1000),
+    httpOnly:true,
+    secure: process.env.NODE_ENV === 'production' // only over HTTPS in production
+  })
+
+  res.status(200).json({
+    success:true,
+    data:{}
+
+  })
+})
+
+
+
 
 
 // @desc   Forget Password
@@ -238,6 +259,7 @@ module.exports={
     register,
     login,
     getMe,
+    logOut,
     forgotPassword,
     resetPassword,
     updateDetails,
